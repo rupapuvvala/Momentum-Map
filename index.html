@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FocusFlow – Auto Credits on Timer Finish</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #eef2ff 0%, #ecfdf5 100%);
+      color: #0f172a;
+    }
+    .app { min-height: 100vh; display: flex; }
+    aside {
+      width: 240px;
+      background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%);
+      color: #e0e7ff;
+      padding: 24px 14px;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; bottom: 0;
+      box-shadow: 4px 0 25px rgba(0,0,0,0.12);
+    }
+    .brand {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      padding: 0 10px 24px;
+      color: #ffffff;
+    }
+    .brand span { color: #60a5fa; }
+    .user {
+      font-size: 12px;
+      color: #c7d2fe;
+      padding: 0 10px 16px;
+    }
+    .nav {
+      width: 100%;
+      border: 0;
+      background: rgba(255,255,255,0.06);
+      text-align: left;
+      color: #e0e7ff;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin: 4px 0;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.15s ease;
+    }
+    .nav:hover {
+      background: rgba(255,255,255,0.14);
+      color: #ffffff;
+    }
+    .nav.active {
+      background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+      color: #052e4a;
+      box-shadow: 0 6px 18px rgba(59,130,246,0.45);
+    }
+    main {
+      margin-left: 240px;
+      padding: 30px;
+      max-width: 1200px;
+      width: 100%;
+    }
+    header { margin-bottom: 20px; }
+    .eyebrow {
+      font-size: 10px;
+      color: #1e40af;
+      font-weight: 900;
+      letter-spacing: 1.6px;
+      margin: 0 0 6px;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: 32px;
+      letter-spacing: -1.2px;
+      margin: 0 0 8px;
+      color: #0c4a6e;
+    }
+    header > p, .panel p, .card p {
+      color: #334155;
+      line-height: 1.55;
+      margin: 0 0 10px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .task, .panel, .habit, .goal, .creditcard, .card {
+      background: #ffffff;
+      border: 1px solid #c7d2fe;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(30,58,138,0.08);
+      margin-bottom: 12px;
+    }
+    .task {
+      border-left: 6px solid #3b82f6;
+    }
+    .task.finished {
+      border-left-color: #10b981;
+      background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+    }
+    .tasktop {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .subject {
+      font-size: 11px;
+      font-weight: 900;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .wt {
+      font-size: 11px;
+      font-weight: 900;
+      color: #065f46;
+      background: #d1fae5;
+      padding: 4px 8px;
+      border-radius: 99px;
+    }
+    .task h3 { margin: 14px 0 5px; font-size: 17px; color: #0c4a6e; }
+    .task p { color: #334155; font-size: 12px; margin: 0 0 12px; }
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-weight: 800;
+      cursor: pointer;
+      background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+      color: #082f49;
+      box-shadow: 0 6px 18px rgba(59,130,246,0.35);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(59,130,246,0.45);
+    }
+    button.secondary {
+      background: linear-gradient(180deg, #e0e7ff 0%, #c7d2fe 100%);
+      color: #1e3a8a;
+      box-shadow: 0 5px 16px rgba(99,102,241,0.25);
+    }
+    button.danger {
+      background: linear-gradient(180deg, #fca5a5 0%, #ef4444 100%);
+      color: #7f1d1d;
+      box-shadow: 0 6px 18px rgba(239,68,68,0.35);
+    }
+    button.success {
+      background: linear-gradient(180deg, #86efac 0%, #22c55e 100%);
+      color: #064e3b;
+      box-shadow: 0 6px 18px rgba(34,197,94,0.35);
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    .task .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .running-badge {
+      display: inline-block;
+      background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+      color: #92400e;
+      padding: 5px 8px;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 12px;
+      border: 1px solid #fcd34d;
+    }
+    .locked-badge {
+      display: inline-block;
+      background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+      color: #475569;
+      padding: 5px 8px;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 12px;
+      border: 1px solid #cbd5e1;
+    }
+    .done-label {
+      color: #059669;
+      font-weight: 900;
+      font-size: 14px;
+      background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+      padding: 5px 8px;
+      border-radius: 10px;
+      border: 1px solid #6ee7b7;
+      display: inline-block;
+    }
+    .focus {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+      color: #e0e7ff;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      box-shadow: 0 10px 25px rgba(30,58,138,0.25);
+    }
+    .focus strong {
+      font-size: 20px;
+      color: #93c5fd;
+    }
+    .focus span {
+      color: #c7d2fe;
+      font-size: 12px;
+    }
+    .toast {
+      position: fixed;
+      right: 16px;
+      top: 12px;
+      background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border-radius: 10px;
+      padding: 8px 12px;
+      z-index: 2;
+      cursor: pointer;
+      max-width: 280px;
+      box-shadow: 0 6px 18px rgba(239,68,68,0.40);
+      display: none;
+    }
+    .panel h2 { font-size: 17px; margin: 0 0 8px; color: #0c4a6e; }
+    .bar {
+      height: 12px;
+      background: #e0e7ff;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 8px;
+      border: 1px solid #c7d2fe;
+    }
+    .bar i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #60a5fa 0%, #22c55e 100%);
+      border-radius: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .form label {
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 4px;
+    }
+    .form input, .form select {
+      border: 1px solid #a5b4fc;
+      border-radius: 10px;
+      padding: 8px;
+      width: 100%;
+      font: inherit;
+      background: #eef2ff;
+      color: #0f172a;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0 12px;
+    }
+    .chip {
+      border: 1px solid #a5b4fc;
+      background: #eef2ff;
+      border-radius: 999px;
+      padding: 6px 9px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+    .chip.selected {
+      background: #dbeafe;
+      border-color: #60a5fa;
+      color: #0c4a6e;
+      font-weight: 900;
+      box-shadow: 0 3px 10px rgba(59,130,246,0.25);
+    }
+    .muted {
+      color: #475569;
+      font-size: 12px;
+    }
+
+    /* Habits, Goals, Credits */
+    .habit {
+      border-left: 6px solid #22c55e;
+    }
+    .habit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .habit-title {
+      font-weight: 800;
+      font-size: 15px;
+      color: #065f46;
+    }
+    .goal {
+      border-top: 6px solid #60a5fa;
+    }
+    .goal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .goal-title {
+      font-weight: 800;
+      font-size: 15px;
+      color: #1e3a8a;
+    }
+    .creditcard {
+      border-left: 6px solid #f59e0b;
+    }
+    .bigstat {
+      font-size: 36px;
+      font-weight: 900;
+      color: #1e3a8a;
+    }
+    .level-badge {
+      display: inline-block;
+      background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+      color: #92400e;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 13px;
+      border: 1px solid #fcd34d;
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    @media (max-width: 850px) {
+      aside {
+        width: 100%;
+        height: auto;
+        position: static;
+        padding: 12px;
+        flex-direction: row;
+        gap: 6px;
+        overflow: auto;
+        align-items: center;
+      }
+      .brand, .user { display: none; }
+      .nav { white-space: nowrap; width: auto; margin: 0; padding: 7px 9px; }
+      main { margin: 0; padding: 16px 12px; }
+      .grid { grid-template-columns: 1fr; }
+      .focus { flex-direction: column; align-items: flex-start; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">Focus<span>Flow</span></div>
+      <div class="user">Welcome, Student</div>
+      <button class="nav active" data-page="study">▶ Study</button>
+      <button class="nav" data-page="habits">♥ Daily Habits</button>
+      <button class="nav" data-page="goals">◉ This Week’s Goals</button>
+      <button class="nav" data-page="credits">★ Credits</button>
+      <button class="nav" data-page="subjects">☷ Subjects</button>
+    </aside>
+
+    <main>
+      <div id="toast" class="toast"></div>
+
+      <!-- STUDY PAGE -->
+      <div id="study" class="page active">
+        <header>
+          <p class="eyebrow">TODAY</p>
+          <h1>Start small. Stay consistent.</h1>
+          <p>Pick a topic, set minutes, and start. When the timer finishes, you automatically earn credits.</p>
+        </header>
+
+        <div id="focusBox" class="focus" style="display:none;">
+          <b>Focus in progress</b>
+          <strong id="timerDisplay">00:00</strong>
+          <span>Other tasks are locked. You can stop anytime.</span>
+          <button class="danger" id="stopBtn">Stop</button>
+        </div>
+
+        <section class="panel">
+          <h2>Add task</h2>
+          <div class="grid">
+            <div class="form">
+              <label>Subject</label>
+              <select id="subjectSelect"></select>
+            </div>
+            <div class="form">
+              <label>Chapter</label>
+              <input id="chapterInput" placeholder="e.g. Algebra" />
+            </div>
+            <div class="form">
+              <label>Topic</label>
+              <input id="topicInput" placeholder="e.g. Quadratic Equations" />
+            </div>
+            <div class="form">
+              <label>Minutes</label>
+              <input id="minutesInput" type="number" min="1" value="20" />
+            </div>
+          </div>
+          <button class="success" id="addTaskBtn">Add task</button>
+        </section>
+
+        <section id="tasksBox" class="cards"></section>
+      </div>
+
+      <!-- HABITS PAGE -->
+      <div id="habits" class="page">
+        <header>
+          <p class="eyebrow">DAILY HABITS</p>
+          <h1>Small habits, big change.</h1>
+          <p>Mark each habit done every day to build your streak and earn credits.</p>
+        </header>
+
+        <section class="panel">
+          <h2>Add habit</h2>
+          <div class="row">
+            <input id="habitInput" class="form" style="flex:1;border:1px solid #a5b4fc;border-radius:10px;padding:8px;background:#eef2ff;" placeholder="e.g. Study 2 hours, Exercise, Read" />
+            <button class="success" id="addHabitBtn">Add</button>
+          </div>
+        </section>
+
+        <section id="habitsBox" class="cards"></section>
+      </div>
+
+      <!-- GOALS PAGE -->
+      <div id="goals" class="page">
+        <header>
+          <p class="eyebrow">THIS WEEK’S GOALS</p>
+          <h1>Decide your week.</h1>
+          <p>Add 3–5 key goals for this week. Check them as you finish and earn credits.</p>
+        </header>
+
+        <section class="panel">
+          <h2>Add goal</h2>
+          <div class="row">
+            <input id="goalInput" class="form" style="flex:1;border:1px solid #a5b4fc;border-radius:10px;padding:8px;background:#eef2ff;" placeholder="e.g. Finish 3 chapters, Solve 50 questions" />
+            <button class="success" id="addGoalBtn">Add</button>
+          </div>
+        </section>
+
+        <section id="goalsBox" class="cards"></section>
+      </div>
+
+      <!-- CREDITS PAGE -->
+      <div id="credits" class="page">
+        <header>
+          <p class="eyebrow">CREDITS</p>
+          <h1>Your progress, scored.</h1>
+          <p>Earn credits automatically when timers finish and when you complete habits & goals.</p>
+        </header>
+
+        <section class="cards">
+          <div class="creditcard">
+            <h2>Today’s points</h2>
+            <div class="bigstat" id="todayPoints">0</div>
+            <p class="muted">From tasks, habits and goals completed today.</p>
+          </div>
+
+          <div class="creditcard">
+            <h2>Total points</h2>
+            <div class="bigstat" id="totalPoints">0</div>
+            <p class="muted">All-time credits.</p>
+          </div>
+
+          <div class="creditcard">
+            <h2>Level</h2>
+            <div class="bigstat"><span class="level-badge" id="levelBadge">Level 1</span></div>
+            <p class="muted">Level up every 100 total points.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Today’s breakdown</h2>
+          <p class="muted" id="breakdownText">
+            Tasks: 0 · Habits: 0 · Goals: 0
+          </p>
+          <p class="muted">Points are based on time spent and activity weightage.</p>
+        </section>
+      </div>
+
+      <!-- SUBJECTS PAGE -->
+      <div id="subjects" class="page">
+        <header>
+          <p class="eyebrow">SUBJECTS</p>
+          <h1>Choose what you study.</h1>
+        </header>
+
+        <section class="panel">
+          <div class="grid">
+            <div class="form">
+              <label>Class / Exam</label>
+              <select id="classSelect">
+                <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+                <option>11</option><option>12</option>
+                <option>JEE</option><option>NEET</option><option>UPSC</option>
+              </select>
+            </div>
+            <div class="form" id="streamBox" style="display:none;">
+              <label>Stream</label>
+              <select id="streamSelect">
+                <option>PCM</option><option>PCB</option><option>Commerce</option><option>Arts</option>
+              </select>
+            </div>
+          </div>
+
+          <h2>Available subjects</h2>
+          <div id="subjectsChips" class="chips"></div>
+
+          <button class="secondary" id="addSubjectBtn">+ Add custom subject</button>
+          <p class="muted" style="margin-top:8px;">Selected: <span id="selectedText">None</span></p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const defaultSubjectsByClass = {
+      '6': ['Mathematics','Science','Social Science','English','Hindi'],
+      '7': ['Mathematics','Science','Social Science','English','Hindi'],
+      '8': ['Mathematics','Science','Social Science','English','Hindi'],
+      '9': ['Mathematics','Science','Social Science','English','Hindi'],
+      '10': ['Mathematics','Science','Social Science','English','Hindi'],
+      '11-PCM': ['Physics','Chemistry','Mathematics','English'],
+      '11-PCB': ['Physics','Chemistry','Biology','English'],
+      '11-Commerce': ['Accountancy','Business Studies','Economics','English'],
+      '11-Arts': ['History','Political Science','Geography','Economics','English'],
+      '12-PCM': ['Physics','Chemistry','Mathematics','English'],
+      '12-PCB': ['Physics','Chemistry','Biology','English'],
+      '12-Commerce': ['Accountancy','Business Studies','Economics','English'],
+      '12-Arts': ['History','Political Science','Geography','Economics','English'],
+      'JEE': ['Physics','Chemistry','Mathematics'],
+      'NEET': ['Physics','Chemistry','Biology'],
+      'UPSC': ['History','Geography','Polity','Economy','Environment','Current Affairs']
+    };
+
+    let state = {
+      classLevel: '6',
+      stream: 'PCM',
+      selectedSubjects: ['Mathematics','Science','English'],
+      customSubjects: [],
+      tasks: [
+        { id:'t1', subject:'Mathematics', chapter:'Basic Maths', title:'Number System', minutes:20, weightage:12, state:'pending', timerFinished:false, done:false, earned:0 },
+        { id:'t2', subject:'Science', chapter:'Physics', title:'Motion', minutes:25, weightage:14, state:'pending', timerFinished:false, done:false, earned:0 },
+        { id:'t3', subject:'English', chapter:'Grammar', title:'Tenses', minutes:20, weightage:10, state:'pending', timerFinished:false, done:false, earned:0 }
+      ],
+      habits: [
+        { id:'h1', title:'Study 2 hours', streak:0, lastDone:null, earned:0 },
+        { id:'h2', title:'Exercise 20 min', streak:0, lastDone:null, earned:0 },
+        { id:'h3', title:'Read 10 pages', streak:0, lastDone:null, earned:0 }
+      ],
+      goals: [
+        { id:'g1', title:'Finish 3 chapters', done:false, earned:0 },
+        { id:'g2', title:'Solve 50 questions', done:false, earned:0 },
+        { id:'g3', title:'Revise notes daily', done:false, earned:0 }
+      ],
+      credits: { todayPoints: 0, totalPoints: 0, lastDate: new Date().toDateString() },
+      activeSession: null
+    };
+
+    try {
+      const saved = localStorage.getItem('ff_plain_state');
+      if (saved) {
+        const loaded = JSON.parse(saved);
+        state = { ...state, ...loaded };
+      }
+    } catch(e) {}
+
+    const todayStr = new Date().toDateString();
+    if (state.credits.lastDate !== todayStr) {
+      state.credits.todayPoints = 0;
+      state.credits.lastDate = todayStr;
+    }
+
+    function saveState() {
+      localStorage.setItem('ff_plain_state', JSON.stringify(state));
+    }
+
+    function autoWeight(title) {
+      const seed = [...title].reduce((s,c)=>s+c.charCodeAt(0), 23);
+      return 5 + (seed % 16);
+    }
+
+    function calcPoints(minutes, weightage) {
+      return Math.max(1, Math.round((minutes / 5) * (weightage / 10)));
+    }
+
+    function levelFromTotal(totalPoints) {
+      return Math.floor(totalPoints / 100) + 1;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg + ' ✕';
+      t.style.display = 'block';
+      setTimeout(()=>{ t.style.display='none'; }, 2500);
+      t.onclick = ()=>{ t.style.display='none'; };
+    }
+
+    document.querySelectorAll('.nav').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('.nav').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const page = btn.dataset.page;
+        document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+        document.getElementById(page).classList.add('active');
+      });
+    });
+
+    const classSelect = document.getElementById('classSelect');
+    const streamBox = document.getElementById('streamBox');
+    const streamSelect = document.getElementById('streamSelect');
+    const subjectsChips = document.getElementById('subjectsChips');
+    const selectedText = document.getElementById('selectedText');
+    const addSubjectBtn = document.getElementById('addSubjectBtn');
+
+    function getSubjectsKey() {
+      const cl = state.classLevel;
+      if (['JEE','NEET','UPSC'].includes(cl)) return cl;
+      if (cl==='11' || cl==='12') return cl + '-' + state.stream;
+      return cl;
+    }
+
+    function renderSubjects() {
+      classSelect.value = state.classLevel;
+      streamSelect.value = state.stream;
+      streamBox.style.display = (state.classLevel==='11' || state.classLevel==='12') ? 'block' : 'none';
+
+      const key = getSubjectsKey();
+      const base = defaultSubjectsByClass[key] || [];
+      const all = [...new Set([...base, ...state.customSubjects])];
+
+      subjectsChips.innerHTML = '';
+      all.forEach(s=>{
+        const chip = document.createElement('button');
+        chip.className = 'chip' + (state.selectedSubjects.includes(s)?' selected':'');
+        chip.textContent = (state.selectedSubjects.includes(s)?'✓ ':'') + s;
+        chip.onclick = ()=>{
+          if (state.selectedSubjects.includes(s)) {
+            state.selectedSubjects = state.selectedSubjects.filter(x=>x!==s);
+          } else {
+            state.selectedSubjects.push(s);
+          }
+          saveState();
+          renderSubjects();
+          renderStudyTasks();
+          updateSubjectSelect();
+        };
+        subjectsChips.appendChild(chip);
+      });
+
+      selectedText.textContent = state.selectedSubjects.join(', ') || 'None';
+    }
+
+    classSelect.onchange = ()=>{
+      state.classLevel = classSelect.value;
+      if (state.classLevel!=='11' && state.classLevel!=='12') {
+        state.stream = 'PCM';
+      }
+      state.selectedSubjects = [];
+      saveState();
+      renderSubjects();
+      updateSubjectSelect();
+    };
+    streamSelect.onchange = ()=>{
+      state.stream = streamSelect.value;
+      state.selectedSubjects = [];
+      saveState();
+      renderSubjects();
+      updateSubjectSelect();
+    };
+
+    addSubjectBtn.onclick = ()=>{
+      const name = prompt('Enter subject name (e.g. Computer Science):');
+      if (!name || !name.trim()) return;
+      const s = name.trim();
+      if (!state.customSubjects.includes(s)) {
+        state.customSubjects.push(s);
+        saveState();
+        renderSubjects();
+        updateSubjectSelect();
+      }
+    };
+
+    const subjectSelect = document.getElementById('subjectSelect');
+    const chapterInput = document.getElementById('chapterInput');
+    const topicInput = document.getElementById('topicInput');
+    const minutesInput = document.getElementById('minutesInput');
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    const tasksBox = document.getElementById('tasksBox');
+    const focusBox = document.getElementById('focusBox');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const stopBtn = document.getElementById('stopBtn');
+
+    let timerInterval = null;
+
+    function updateSubjectSelect() {
+      subjectSelect.innerHTML = '';
+      state.selectedSubjects.forEach(s=>{
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        subjectSelect.appendChild(opt);
+      });
+    }
+
+    function fmt(sec) {
+      const m = Math.floor(sec/60);
+      const s = sec%60;
+      return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    }
+
+    function renderStudyTasks() {
+      tasksBox.innerHTML = '';
+      state.tasks.forEach(t=>{
+        const card = document.createElement('article');
+        card.className = 'task' + (t.done?' finished':'');
+
+        const top = document.createElement('div');
+        top.className = 'tasktop';
+
+        const subj = document.createElement('span');
+        subj.className = 'subject';
+        subj.textContent = t.subject;
+
+        const wt = document.createElement('span');
+        wt.className = 'wt';
+        wt.textContent = 'wt ' + t.weightage + '%';
+
+        top.appendChild(subj);
+        top.appendChild(wt);
+
+        const h3 = document.createElement('h3');
+        h3.textContent = t.title;
+
+        const p = document.createElement('p');
+        p.textContent = t.chapter + ' · ' + t.minutes + ' min';
+
+        card.appendChild(top);
+        card.appendChild(h3);
+        card.appendChild(p);
+
+        if (!t.done) {
+          const label = document.createElement('div');
+          label.className = 'form';
+          label.style.marginBottom = '8px';
+          const ltext = document.createElement('label');
+          ltext.textContent = 'Timer minutes';
+          const inp = document.createElement('input');
+          inp.type = 'number';
+          inp.min = '1';
+          inp.value = t.minutes;
+          inp.onchange = ()=>{
+            const n = Number(inp.value);
+            if (!n || n<=0) return;
+            t.minutes = n;
+            saveState();
+          };
+          if (state.activeSession && state.activeSession.taskId !== t.id) {
+            inp.disabled = true;
+          }
+          label.appendChild(ltext);
+          label.appendChild(inp);
+          card.appendChild(label);
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        if (t.done) {
+          const doneLabel = document.createElement('span');
+          doneLabel.className = 'done-label';
+          doneLabel.textContent = '✓ Done (+'+t.earned+' credits)';
+          actions.appendChild(doneLabel);
+        } else if (state.activeSession) {
+          if (state.activeSession.taskId === t.id) {
+            const badge = document.createElement('span');
+            badge.className = 'running-badge';
+            badge.textContent = 'Running · ' + fmt(Math.max(0, Math.ceil((state.activeSession.endsAt - Date.now())/1000)));
+            actions.appendChild(badge);
+
+            const stopB = document.createElement('button');
+            stopB.className = 'danger';
+            stopB.textContent = 'Stop';
+            stopB.onclick = ()=>{
+              state.activeSession = null;
+              t.state = 'pending';
+              t.timerFinished = false;
+              saveState();
+              renderStudyTasks();
+              stopTimerUI();
+            };
+            actions.appendChild(stopB);
+
+            const finishB = document.createElement('button');
+            finishB.textContent = 'Finish now';
+            finishB.onclick = ()=>{
+              completeTask(t);
+              state.activeSession = null;
+              saveState();
+              renderStudyTasks();
+              stopTimerUI();
+            };
+            actions.appendChild(finishB);
+          } else {
+            const badge = document.createElement('span');
+            badge.className = 'locked-badge';
+            badge.textContent = '🔒 Locked';
+            actions.appendChild(badge);
+          }
+        } else {
+          const btn = document.createElement('button');
+          btn.textContent = '▶ Start session';
+          btn.onclick = ()=>{
+            if (state.activeSession) return;
+            const endsAt = Date.now() + t.minutes*60*1000;
+            state.activeSession = { taskId: t.id, endsAt };
+            t.state = 'running';
+            saveState();
+            renderStudyTasks();
+            startTimerUI(t);
+          };
+          actions.appendChild(btn);
+        }
+
+        card.appendChild(actions);
+        tasksBox.appendChild(card);
+      });
+    }
+
+    function completeTask(t) {
+      if (t.done) return;
+      const pts = calcPoints(t.minutes, t.weightage);
+      t.done = true;
+      t.earned = pts;
+      t.timerFinished = true;
+      state.credits.todayPoints += pts;
+      state.credits.totalPoints += pts;
+      saveState();
+      renderCredits();
+      showToast('+'+pts+' credits added!');
+    }
+
+    function startTimerUI(task) {
+      focusBox.style.display = 'flex';
+      stopBtn.onclick = ()=>{
+        state.activeSession = null;
+        task.state = 'pending';
+        task.timerFinished = false;
+        saveState();
+        renderStudyTasks();
+        stopTimerUI();
+      };
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(()=>{
+        const left = Math.max(0, Math.ceil((state.activeSession.endsAt - Date.now())/1000));
+        timerDisplay.textContent = fmt(left);
+        if (left === 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          completeTask(task);
+          state.activeSession = null;
+          saveState();
+          renderStudyTasks();
+          stopTimerUI();
+        }
+      }, 1000);
+    }
+
+    function stopTimerUI() {
+      focusBox.style.display = 'none';
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    addTaskBtn.onclick = ()=>{
+      const subject = subjectSelect.value;
+      const chapter = chapterInput.value.trim();
+      const title = topicInput.value.trim();
+      const minutes = Number(minutesInput.value);
+      if (!subject || !chapter || !title || !minutes || minutes<=0) {
+        showToast('Fill all fields properly');
+        return;
+      }
+      const id = 't' + Date.now();
+      const weightage = autoWeight(title);
+      state.tasks.unshift({
+        id, subject, chapter, title, minutes, weightage,
+        state:'pending', timerFinished:false, done:false, earned:0
+      });
+      saveState();
+      chapterInput.value = '';
+      topicInput.value = '';
+      minutesInput.value = 20;
+      renderStudyTasks();
+      showToast('Task added');
+    };
+
+    const habitInput = document.getElementById('habitInput');
+    const addHabitBtn = document.getElementById('addHabitBtn');
+    const habitsBox = document.getElementById('habitsBox');
+
+    function renderHabits() {
+      habitsBox.innerHTML = '';
+      const today = new Date().toDateString();
+      state.habits.forEach(h=>{
+        const card = document.createElement('article');
+        card.className = 'habit';
+
+        const header = document.createElement('div');
+        header.className = 'habit-header';
+
+        const title = document.createElement('span');
+        title.className = 'habit-title';
+        title.textContent = h.title;
+
+        const streak = document.createElement('span');
+        streak.className = 'wt';
+        streak.textContent = '🔥 ' + h.streak + ' day';
+
+        header.appendChild(title);
+        header.appendChild(streak);
+
+        const p = document.createElement('p');
+        p.className = 'muted';
+        p.textContent = 'Streak grows when you mark this done each day.';
+
+        const btn = document.createElement('button');
+        const doneToday = h.lastDone === today;
+        btn.className = doneToday ? 'secondary' : 'success';
+        btn.textContent = doneToday ? '✓ Done today' : 'Mark done today';
+        btn.onclick = ()=>{
+          if (doneToday) {
+            const pts = h.earned || 5;
+            state.credits.todayPoints = Math.max(0, state.credits.todayPoints - pts);
+            state.credits.totalPoints = Math.max(0, state.credits.totalPoints - pts);
+            h.lastDone = null;
+            h.streak = Math.max(0, h.streak - 1);
+            h.earned = 0;
+          } else {
+            const pts = 5;
+            state.credits.todayPoints += pts;
+            state.credits.totalPoints += pts;
+            h.lastDone = today;
+            h.streak += 1;
+            h.earned = pts;
+          }
+          saveState();
+          renderHabits();
+          renderCredits();
+        };
+
+        card.appendChild(header);
+        card.appendChild(p);
+        card.appendChild(btn);
+        habitsBox.appendChild(card);
+      });
+    }
+
+    addHabitBtn.onclick = ()=>{
+      const title = habitInput.value.trim();
+      if (!title) { showToast('Enter habit name'); return; }
+      const id = 'h' + Date.now();
+      state.habits.push({ id, title, streak:0, lastDone:null, earned:0 });
+      saveState();
+      habitInput.value = '';
+      renderHabits();
+    };
+
+    const goalInput = document.getElementById('goalInput');
+    const addGoalBtn = document.getElementById('addGoalBtn');
+    const goalsBox = document.getElementById('goalsBox');
+
+    function renderGoals() {
+      goalsBox.innerHTML = '';
+      state.goals.forEach(g=>{
+        const card = document.createElement('article');
+        card.className = 'goal';
+
+        const header = document.createElement('div');
+        header.className = 'goal-header';
+
+        const title = document.createElement('span');
+        title.className = 'goal-title';
+        title.textContent = g.title;
+
+        const label = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = g.done;
+        cb.onchange = ()=>{
+          if (g.done) {
+            const pts = g.earned || 10;
+            state.credits.todayPoints = Math.max(0, state.credits.todayPoints - pts);
+            state.credits.totalPoints = Math.max(0, state.credits.totalPoints - pts);
+            g.done = false;
+            g.earned = 0;
+          } else {
+            const pts = 10;
+            state.credits.todayPoints += pts;
+            state.credits.totalPoints += pts;
+            g.done = true;
+            g.earned = pts;
+          }
+          saveState();
+          renderGoals();
+          renderCredits();
+        };
+        const tspan = document.createElement('span');
+        tspan.style.color = g.done ? '#059669' : '#334155';
+        tspan.style.fontWeight = '700';
+        tspan.textContent = g.done ? 'Done' : 'In progress';
+
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(' '));
+        label.appendChild(tspan);
+
+        header.appendChild(title);
+        header.appendChild(label);
+
+        const p = document.createElement('p');
+        p.className = 'muted';
+        p.textContent = 'Mark as done when you complete this goal.';
+
+        card.appendChild(header);
+        card.appendChild(p);
+        goalsBox.appendChild(card);
+      });
+    }
+
+    addGoalBtn.onclick = ()=>{
+      const title = goalInput.value.trim();
+      if (!title) { showToast('Enter goal text'); return; }
+      const id = 'g' + Date.now();
+      state.goals.push({ id, title, done:false, earned:0 });
+      saveState();
+      goalInput.value = '';
+      renderGoals();
+    };
+
+    const todayPointsEl = document.getElementById('todayPoints');
+    const totalPointsEl = document.getElementById('totalPoints');
+    const levelBadge = document.getElementById('levelBadge');
+    const breakdownText = document.getElementById('breakdownText');
+
+    function renderCredits() {
+      todayPointsEl.textContent = state.credits.todayPoints;
+      totalPointsEl.textContent = state.credits.totalPoints;
+      const level = levelFromTotal(state.credits.totalPoints);
+      levelBadge.textContent = 'Level ' + level;
+
+      const todayTasks = state.tasks.filter(t=>t.done).reduce((s,t)=>s+(t.earned||0),0);
+      const today = new Date().toDateString();
+      const todayHabits = state.habits.filter(h=>h.lastDone===today).reduce((s,h)=>s+(h.earned||0),0);
+      const todayGoals = state.goals.filter(g=>g.done).reduce((s,g)=>s+(g.earned||0),0);
+
+      breakdownText.textContent = 'Tasks: '+todayTasks+' · Habits: '+todayHabits+' · Goals: '+todayGoals;
+    }
+
+    renderSubjects();
+    updateSubjectSelect();
+    renderStudyTasks();
+    renderHabits();
+    renderGoals();
+    renderCredits();
+
+    if (state.activeSession) {
+      const task = state.tasks.find(t=>t.id===state.activeSession.taskId);
+      if (task && !task.timerFinished && !task.done) {
+        startTimerUI(task);
+      } else {
+        state.activeSession = null;
+        saveState();
+      }
+    }
+  </script>
+</body>
+</html>
